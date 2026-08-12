@@ -9,15 +9,29 @@ export const CYPHER_QUERIES = {
     LIMIT 250
   `,
 
-  // 2. Multi-hop Circular Money Laundering (Layering Loop) Detection Query (3 to 6 hops)
+  // 2. Multi-hop Circular Money Laundering (Layering Loop) Detection
+  // CognoDB openCypher - uses explicit hop patterns (variable-length circular syntax not supported)
+  // Deduplicates ring rotations by only keeping the row where the start node is alphabetically first
   DETECT_CIRCULAR_LOOPS: `
-    MATCH path = (a:Account)-[r:TRANSFERRED*3..6]->(a)
-    WHERE ALL(rel IN relationships(path) WHERE rel.amount >= 2500)
-    WITH path, 
-         [node IN nodes(path) | node.accountNo] AS ringAccounts,
-         [rel IN relationships(path) | rel.amount] AS amounts,
-         reduce(total = 0, rel IN relationships(path) | total + rel.amount) AS totalVolume
-    RETURN ringAccounts, amounts, totalVolume, length(path) AS hopCount, path
+    MATCH (a:Account)-[r1:TRANSFERRED]->(b:Account)-[r2:TRANSFERRED]->(c:Account)-[r3:TRANSFERRED]->(a)
+    WHERE a.accountNo <> b.accountNo AND b.accountNo <> c.accountNo AND a.accountNo <> c.accountNo
+      AND r1.amount >= 2500 AND r2.amount >= 2500 AND r3.amount >= 2500
+      AND a.accountNo < b.accountNo AND a.accountNo < c.accountNo
+    WITH [a.accountNo, b.accountNo, c.accountNo] AS ringAccounts,
+         [r1.amount, r2.amount, r3.amount] AS amounts,
+         r1.amount + r2.amount + r3.amount AS totalVolume,
+         3 AS hopCount
+    RETURN ringAccounts, amounts, totalVolume, hopCount
+    UNION
+    MATCH (a:Account)-[r1:TRANSFERRED]->(b:Account)-[r2:TRANSFERRED]->(c:Account)-[r3:TRANSFERRED]->(d:Account)-[r4:TRANSFERRED]->(a)
+    WHERE a.accountNo <> b.accountNo AND b.accountNo <> c.accountNo AND c.accountNo <> d.accountNo
+      AND r1.amount >= 2500 AND r2.amount >= 2500 AND r3.amount >= 2500 AND r4.amount >= 2500
+      AND a.accountNo < b.accountNo AND a.accountNo < c.accountNo AND a.accountNo < d.accountNo
+    WITH [a.accountNo, b.accountNo, c.accountNo, d.accountNo] AS ringAccounts,
+         [r1.amount, r2.amount, r3.amount, r4.amount] AS amounts,
+         r1.amount + r2.amount + r3.amount + r4.amount AS totalVolume,
+         4 AS hopCount
+    RETURN ringAccounts, amounts, totalVolume, hopCount
     ORDER BY totalVolume DESC
     LIMIT 10
   `,
