@@ -1,35 +1,31 @@
-# FraudRing Sentinel : Financial Crime & Synthetic Identity Graph Intelligence Platform
+# FraudRing Sentinel: Financial Crime and Synthetic Identity Graph Intelligence Platform
 
-**Built for the Wexa AI Software Engineer (Full-Stack / Web) Assessment Task.**
-
-[![CognoDB Graph AI](https://img.shields.io/badge/Graph_Database-CognoDB_Cloud-6366F1?style=for-the-badge&logo=neo4j)](https://console.cognodb.com)
-[![Protocol](https://img.shields.io/badge/Protocol-openCypher_Bolt_5.0-emerald?style=for-the-badge)](https://cognodb.com)
-[![Framework](https://img.shields.io/badge/Framework-Next.js_14_App_Router-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
+Built for the Wexa AI Software Engineer (Full-Stack / Web) Assessment Task.
 
 ---
 
-## 📌 Executive Summary & Use Case
+## Executive Summary and Use Case
 
-**FraudRing Sentinel** is a financial intelligence and automated fraud ring detection system powered by **CognoDB Cloud** (openCypher graph database over Bolt protocol).
+FraudRing Sentinel is a financial intelligence and automated fraud ring detection platform powered by CognoDB Cloud (openCypher graph database over Bolt protocol).
 
-Modern financial crime networks do not operate as isolated transaction rows. Fraud rings use **multi-hop circular layering** (moving money through 3–6 intermediate shell and mule accounts before returning it to the origin) and **synthetic identity clusters** (multiple fictitious customer accounts sharing physical devices, IP subnets, or stolen SSN fragments).
+Financial crime networks do not operate as isolated transaction rows. Fraud rings rely on multi-hop circular layering (moving funds through 3 to 6 intermediate accounts before returning to the origin) and synthetic identity clusters (multiple customer accounts sharing physical devices, IP subnets, or stolen SSN fragments).
 
-FraudRing Sentinel models financial entities (Accounts, Customers, Devices, Merchants) as a **labeled property graph** and executes real-time multi-hop Cypher queries to automatically detect, highlight, and trace money laundering loops and synthetic identity rings.
+FraudRing Sentinel models financial entities (Accounts, Customers, Devices, Merchants) as a labeled property graph and executes real-time multi-hop Cypher queries to automatically detect, highlight, and trace money laundering loops and synthetic identity networks.
 
 ---
 
-## ⚡ Why a Graph Database? (Graph vs. Relational Schema)
+## Why a Graph Database? (Graph vs Relational Schema)
 
 ### The Core Problem with Relational Databases (SQL)
-In a traditional relational database (e.g. PostgreSQL or MySQL), transaction logs are stored in tabular rows (`transactions(id, from_account_id, to_account_id, amount, timestamp)`). 
+In a traditional relational database (such as PostgreSQL or MySQL), transaction records are stored in tabular rows (`transactions(id, from_account_id, to_account_id, amount, timestamp)`).
 
-When an analyst asks:
-> *"Find all circular money movement loops where money travels through 3 to 6 intermediate accounts and returns to the source account within 1 hour."*
+When an analyst queries:
+> "Find all circular money movement loops where money travels through 3 to 6 intermediate accounts and returns to the source account."
 
-A relational SQL database must execute **recursive Common Table Expressions (CTEs)** or **multiple self-JOINs**:
+A relational SQL database must execute recursive Common Table Expressions (CTEs) or multiple self-joins:
 
 ```sql
--- Relational SQL (Awkward & Slow Recursive CTE)
+-- Relational SQL (Recursive CTE)
 WITH RECURSIVE layering_loop AS (
   SELECT from_account_id, to_account_id, amount, 1 AS depth, ARRAY[from_account_id] AS path
   FROM transactions
@@ -45,19 +41,19 @@ WITH RECURSIVE layering_loop AS (
 SELECT * FROM layering_loop WHERE to_account_id = path[1];
 ```
 
-### Why SQL Fails:
-1. **Join Explosion & Latency**: Each join requires scanning index trees across millions of rows. At 4 to 6 hops, memory usage spikes exponentially and queries frequently timeout.
-2. **Rigid Schema Limits**: Linking accounts to shared IP addresses, device fingerprints, or stolen SSN fragments requires creating multiple foreign key mapping tables (`account_devices`, `customer_ssn_mappings`), making graph discovery queries impossibly complex.
+### Limitations of Relational Schemas
+1. Join Latency: Each hop requires index scans across millions of rows. At 4 to 6 hops, query performance degrades exponentially and frequently times out.
+2. Rigid Schema Boundaries: Linking accounts to shared devices, IP addresses, or stolen SSN fragments requires intermediate mapping tables (`account_devices`, `customer_ssn_mappings`), making traversal queries complex to write and slow to execute.
 
 ---
 
 ### The CognoDB Graph Advantage (openCypher)
-Graph databases store data using **Index-Free Adjacency**. Memory pointers connect nodes directly to their relationships. Traversal speed depends only on the number of connected edges, not the total size of the database ($O(1)$ pointer traversal per hop).
+Graph databases store data using Index-Free Adjacency. Memory pointers connect nodes directly to their relationships. Traversal speed depends only on the number of connected edges rather than total database size.
 
-In **openCypher**, the exact same multi-hop circular fraud ring query is expressed natively in **a single pattern match**:
+In openCypher, the exact same multi-hop circular fraud ring query is expressed natively in a single pattern match:
 
 ```cypher
-// CognoDB openCypher (Fast Index-Free Adjacency Traversal)
+// CognoDB openCypher (Index-Free Adjacency Traversal)
 MATCH path = (a:Account)-[r:TRANSFERRED*3..6]->(a)
 WHERE ALL(rel IN relationships(path) WHERE rel.amount >= 2500)
 WITH path, 
@@ -68,17 +64,17 @@ RETURN ringAccounts, amounts, totalVolume, length(path) AS hopCount
 ORDER BY totalVolume DESC;
 ```
 
-### Key Rationale Summary:
+### Key Rationale Summary
 | Feature | Relational Schema (PostgreSQL) | CognoDB Graph Database (openCypher) |
 | :--- | :--- | :--- |
-| **Multi-Hop Traversal (3-6 Hops)** | Slow recursive CTEs / 6x Self-Joins | Native pattern matching (`-[:TRANSFERRED*3..6]->`) |
+| **Multi-Hop Traversal (3-6 Hops)** | Slow recursive CTEs / self-joins | Native pattern matching (`-[:TRANSFERRED*3..6]->`) |
 | **Performance Scaling** | Degrades exponentially with depth ($O(N^k)$) | Constant time pointer navigation ($O(1)$ per hop) |
 | **Synthetic Identity Connections** | Complex multi-table outer joins | Instant multi-entity hop (`(:Customer)-[:USED_DEVICE]-(:Device)`) |
 | **Shortest Money Path Finding** | Complex Djikstra stored procedures | Built-in `shortestPath()` function |
 
 ---
 
-## 📐 Graph Data Model & Schema
+## Graph Data Model and Schema
 
 ```mermaid
 graph TD
@@ -93,7 +89,7 @@ graph TD
     A4 -->|TRANSFERRED $24,000| A3
     A3 -->|TRANSFERRED $23,500| A1
 
-    %% Synthetic Identity & Device Sharing
+    %% Synthetic Identity and Device Sharing
     C1 -->|USED_DEVICE| D1[Device: iPhone 14 Pro]
     C2 -->|USED_DEVICE| D1
     C1 -->|SHARES_PII: SSN| C2
@@ -103,7 +99,7 @@ graph TD
 ```
 
 ### Entity Taxonomy
-* **`Account` Node**: `accountNo`, `balance`, `riskScore`, `status` (`FLAGGED` | `SUSPICIOUS` | `ACTIVE`), `type`.
+* **`Account` Node**: `accountNo`, `balance`, `riskScore`, `status` (`FLAGGED`, `SUSPICIOUS`, `ACTIVE`), `type`.
 * **`Customer` Node**: `customerId`, `name`, `email`, `riskScore`, `ssn`, `country`.
 * **`Device` Node**: `deviceId`, `model`, `ipAddress`, `fingerprint`, `isFlagged`.
 * **`Merchant` Node**: `merchantId`, `name`, `category`, `riskLevel`.
@@ -116,21 +112,21 @@ graph TD
 
 ---
 
-## 🛠️ Step-by-Step Setup & CognoDB Cloud Guide
+## Step-by-Step Setup Guide
 
 ### 1. Provision Free CognoDB Cloud Instance
-1. Go to **[https://console.cognodb.com/signup](https://console.cognodb.com/signup)** and create a free account (no credit card required).
-2. Create a free **c0** instance and pick your region. It provisions in under 60 seconds.
-3. Copy your connection details:
+1. Go to https://console.cognodb.com/signup and create a free account.
+2. Create a free c0 instance and select a region.
+3. Save your connection details:
    - **URI**: `bolt+s://<instance-id>.databases.cognodb.cloud`
    - **Username**: `cognodb`
-   - **Password**: *(saved from the console)*
+   - **Password**: (saved from console)
 
 ### 2. Configure Local Environment
 Clone the repository and copy `.env.example` to `.env.local`:
 
 ```bash
-git clone https://github.com/your-username/cognodb-fraudring-sentinel.git
+git clone https://github.com/Gautam2117/cognodb-fraudring-sentinel.git
 cd cognodb-fraudring-sentinel
 cp .env.example .env.local
 ```
@@ -142,10 +138,10 @@ COGNO_USER=cognodb
 COGNO_PASSWORD=your-saved-password
 ```
 
-*(Note: If no database credentials are provided, the web application automatically falls back to interactive demo mode so evaluators can explore immediately).*
+Note: If no database credentials are provided, the application activates interactive demo mode so evaluators can explore immediately.
 
 ### 3. Run Database Seed Script
-Populate your live CognoDB instance with realistic financial network data (~150 nodes, ~350 relationships containing layering loops, mule chains, and synthetic identity networks):
+Populate your CognoDB instance with financial network data (nodes and relationships containing layering loops, mule chains, and synthetic identity networks):
 
 ```bash
 npm install
@@ -154,28 +150,28 @@ npm run seed
 
 Output:
 ```text
-🔌 Connecting to CognoDB Cloud at: bolt+s://...
-🧹 Clearing existing database graph...
-🔒 Creating constraints and indexes...
-🌱 Injecting realistic Financial Crime & Fraud Ring Dataset...
-✅ Seed Completed Successfully!
-📊 Summary: Injected Nodes and Relationships into CognoDB Cloud.
+Connecting to CognoDB Cloud...
+Clearing existing database graph...
+Creating constraints and indexes...
+Injecting Financial Crime and Fraud Ring Dataset...
+Seed Completed Successfully!
+Summary: Injected Nodes and Relationships into CognoDB Cloud.
 ```
 
 ### 4. Launch Web Application
 ```bash
 npm run dev
 ```
-Open **[http://localhost:3000](http://localhost:3000)** in your browser.
+Open http://localhost:3000 in your browser.
 
 ---
 
-## 💻 Technical Stack & Code Structure
+## Technical Stack and Code Structure
 
-* **Database Layer**: **CognoDB Cloud** (openCypher over Bolt 5.0 protocol via `neo4j-driver`)
-* **Frontend / Framework**: **Next.js 14 (App Router)** with **TypeScript** & **TailwindCSS**
-* **Graph Visualization**: **Vis.js Network** (Interactive 2D physics engine, drag & zoom canvas)
-* **Icons & Animation**: **Lucide React** & **Framer Motion**
+* **Database Layer**: CognoDB Cloud (openCypher over Bolt protocol via `neo4j-driver`)
+* **Frontend Framework**: Next.js 14 (App Router) with TypeScript and TailwindCSS
+* **Graph Visualization**: Vis.js Network (Interactive physics engine, canvas controls)
+* **UI Components**: Lucide React
 
 ### Repository Directory Structure
 ```text
@@ -183,34 +179,34 @@ CognoDB/
 ├── app/
 │   ├── api/
 │   │   ├── graph/
-│   │   │   ├── query/route.ts       # Parameterized Cypher runner & graph view
-│   │   │   ├── fraud-rings/route.ts # Multi-hop layering & synthetic ring detector
+│   │   │   ├── query/route.ts       # Parameterized Cypher runner and graph view
+│   │   │   ├── fraud-rings/route.ts # Multi-hop layering and synthetic ring detector
 │   │   │   └── path-finder/route.ts # Shortest path tracer endpoint
-│   │   ├── health/route.ts          # CognoDB Bolt connection ping & latency
-│   │   └── seed/route.ts            # One-click web UI seed trigger
-│   ├── globals.css                  # Dark mode styling & glassmorphism utilities
+│   │   ├── health/route.ts          # CognoDB Bolt connection ping and latency
+│   │   └── seed/route.ts            # Web UI seed trigger
+│   ├── globals.css                  # Dark mode styling and utilities
 │   ├── layout.tsx                   # Root HTML layout
 │   └── page.tsx                     # Main Sentinel Dashboard
 ├── components/
-│   ├── ConnectionStatus.tsx         # Real-time CognoDB status badge & latency
+│   ├── ConnectionStatus.tsx         # Real-time CognoDB status badge and latency
 │   ├── GraphCanvas.tsx              # Interactive Vis.js network graph canvas
-│   ├── FraudRingInspector.tsx       # Fraud ring detection panel & canvas highlighters
+│   ├── FraudRingInspector.tsx       # Fraud ring detection panel
 │   ├── CypherPlayground.tsx         # Interactive openCypher console with presets
 │   ├── PathFinderModal.tsx          # Multi-hop shortest path tracer modal
-│   └── ArchitectureDiagram.tsx      # Graph vs SQL comparison & schema visualizer
+│   └── ArchitectureDiagram.tsx      # Graph vs SQL comparison and schema visualizer
 ├── lib/
-│   ├── neo4j.ts                     # Neo4j Bolt driver initialization & clean formatters
-│   └── queries.ts                   # Type-safe Cypher queries & mock fallback data
+│   ├── neo4j.ts                     # Neo4j Bolt driver initialization
+│   └── queries.ts                   # Type-safe Cypher queries and fallback data
 ├── scripts/
 │   └── seed.ts                      # Standalone CLI database seed script
 ├── .env.example                     # Environment template
-├── package.json                     # Dependencies & npm scripts
+├── package.json                     # Dependencies and npm scripts
 └── README.md                        # Documentation
 ```
 
 ---
 
-## 🔍 Key Cypher Queries Explained
+## Key Cypher Queries Explained
 
 ### 1. Circular Layering Loop Detection (Multi-Hop)
 ```cypher
@@ -245,13 +241,9 @@ RETURN path, length(path) AS hopCount
 
 ---
 
-## 🌐 Hosted Demo & Submission Details
+## Hosted Demo and Submission Details
 
-* **GitHub Repository**: Submitted via email to `hr@wexa.ai`
-* **Subject Line**: `CognoDB Assignment 2 – Gautam Govind`
-* **Live Demo URL**: **[https://cognodb-fraudring-sentinel.vercel.app](https://cognodb-fraudring-sentinel.vercel.app)**
-* **CognoDB Cloud Instance**: Running live on `databases.cognodb.cloud`.
-
----
-
-*Engineered with precision for Wexa AI.*
+* **GitHub Repository**: https://github.com/Gautam2117/cognodb-fraudring-sentinel
+* **Live Demo URL**: https://cognodb-fraudring-sentinel.vercel.app
+* **Subject Line**: `CognoDB Assignment 2 - Gautam Govind`
+* **Recipient**: `hr@wexa.ai`
