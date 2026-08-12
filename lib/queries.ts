@@ -10,8 +10,7 @@ export const CYPHER_QUERIES = {
   `,
 
   // 2. Multi-hop Circular Money Laundering (Layering Loop) Detection
-  // CognoDB openCypher - uses explicit hop patterns (variable-length circular syntax not supported)
-  // Deduplicates ring rotations by only keeping the row where the start node is alphabetically first
+  // Detects 3-hop and 4-hop circular transfer structures while suppressing cycle rotations via canonical node ordering
   DETECT_CIRCULAR_LOOPS: `
     MATCH (a:Account)-[r1:TRANSFERRED]->(b:Account)-[r2:TRANSFERRED]->(c:Account)-[r3:TRANSFERRED]->(a)
     WHERE a.accountNo <> b.accountNo AND b.accountNo <> c.accountNo AND a.accountNo <> c.accountNo
