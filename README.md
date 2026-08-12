@@ -241,9 +241,26 @@ RETURN path, length(path) AS hopCount
 
 ---
 
+## UI Screenshots and Interactive Features
+
+### 1. Main Graph Canvas and Fraud Ring Inspector
+![Main Dashboard Graph Canvas](public/screenshots/dashboard.png)
+*Interactive graph canvas powered by Vis.js physics engine, displaying labeled heterogeneous nodes (Accounts, Customers, Devices, Merchants) and real-time fraud ring highlighting.*
+
+### 2. Parameterized openCypher Query Console
+![Cypher Playground Console](public/screenshots/cypher_playground.png)
+*Interactive query console with pre-configured Cypher presets for multi-hop layering loop detection, synthetic identity search, hub centrality ranking, and full graph fetches.*
+
+### 3. Architecture Comparison: Graph (CognoDB) vs Relational (PostgreSQL)
+![Graph vs SQL Architecture Comparison](public/screenshots/graph_vs_sql.png)
+*Visual breakdown of Index-Free Adjacency pointer traversal versus recursive self-joins and CTE join explosion in SQL.*
+
+---
+
 ## Hosted Demo and Submission Details
 
 * **GitHub Repository**: https://github.com/Gautam2117/cognodb-fraudring-sentinel
 * **Live Demo URL**: https://cognodb-fraudring-sentinel.vercel.app
 * **Subject Line**: `CognoDB Assignment 2 - Gautam Govind`
 * **Recipient**: `hr@wexa.ai`
+
