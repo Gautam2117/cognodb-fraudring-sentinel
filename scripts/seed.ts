@@ -11,12 +11,12 @@ const user = process.env.COGNO_USER || process.env.NEO4J_USER || 'cognodb';
 const password = process.env.COGNO_PASSWORD || process.env.NEO4J_PASSWORD;
 
 if (!uri || !password) {
-  console.error('❌ Error: COGNO_URI and COGNO_PASSWORD must be set in .env.local to seed CognoDB Cloud.');
-  console.log('💡 Example: COGNO_URI=bolt+s://<instance-id>.databases.cognodb.cloud COGNO_PASSWORD=<password>');
+  console.error('Error: COGNO_URI and COGNO_PASSWORD must be set in .env.local to seed CognoDB Cloud.');
+  console.log('Example: COGNO_URI=bolt+s://<instance-id>.databases.cognodb.cloud COGNO_PASSWORD=<password>');
   process.exit(1);
 }
 
-console.log(`🔌 Connecting to CognoDB Cloud at: ${uri}`);
+console.log(`Connecting to CognoDB Cloud at: ${uri}`);
 const driver = neo4j.driver(uri, neo4j.auth.basic(user, password), {
   disableLosslessIntegers: true,
 });
@@ -24,19 +24,19 @@ const driver = neo4j.driver(uri, neo4j.auth.basic(user, password), {
 async function seed() {
   const session = driver.session();
   try {
-    console.log('🧹 Clearing existing database graph...');
+    console.log('Clearing existing database graph...');
     await session.run('MATCH (n) DETACH DELETE n');
 
-    console.log('🔒 Creating constraints and indexes...');
+    console.log('Creating constraints and indexes...');
     try {
       await session.run('CREATE CONSTRAINT account_no IF NOT EXISTS FOR (a:Account) REQUIRE a.accountNo IS UNIQUE');
       await session.run('CREATE CONSTRAINT customer_id IF NOT EXISTS FOR (c:Customer) REQUIRE c.customerId IS UNIQUE');
       await session.run('CREATE CONSTRAINT device_id IF NOT EXISTS FOR (d:Device) REQUIRE d.deviceId IS UNIQUE');
     } catch (e: any) {
-      console.log('⚠️ Constraint creation notice (continuing):', e.message);
+      // Constraint may already exist - continue
     }
 
-    console.log('🌱 Injecting realistic Financial Crime & Fraud Ring Dataset...');
+    console.log('Injecting Financial Crime and Fraud Ring Dataset...');
 
     // 1. Create Accounts
     const accounts = [
@@ -46,8 +46,8 @@ async function seed() {
       { accountNo: 'ACC-103', balance: 45000, riskScore: 85, status: 'SUSPICIOUS', type: 'Checking', createdAt: '2026-03-10' },
       { accountNo: 'ACC-104', balance: 135000, riskScore: 96, status: 'FLAGGED', type: 'Investment', createdAt: '2026-01-20' },
 
-      // Ring Beta (3-Hop Offshore Re-cycling Loop)
-      { accountNo: 'ACC-201', balance: 12500, riskScore: 20, status: 'ACTIVE', type: 'Savings', createdAt: '2025-11-05' },
+      // Ring Beta (3-Hop Offshore Recycling Loop: ACC-201 -> ACC-202 -> ACC-203 -> ACC-201)
+      { accountNo: 'ACC-201', balance: 12500, riskScore: 82, status: 'FLAGGED', type: 'Savings', createdAt: '2025-11-05' },
       { accountNo: 'ACC-202', balance: 28000, riskScore: 78, status: 'SUSPICIOUS', type: 'Checking', createdAt: '2026-04-12' },
       { accountNo: 'ACC-203', balance: 310000, riskScore: 90, status: 'FLAGGED', type: 'Offshore-Wire', createdAt: '2026-05-01' },
 
@@ -182,11 +182,11 @@ async function seed() {
       { from: 'ACC-104', to: 'ACC-101', amount: 23500, timestamp: '2026-08-10T11:15:00Z', txHash: '0x7f9904' }
     ];
 
-    // --- RING BETA (3-Hop Loop) ---
+    // --- RING BETA (3-Hop Circular Loop: ACC-201 -> ACC-202 -> ACC-203 -> ACC-201) ---
     const ringBetaTx = [
       { from: 'ACC-201', to: 'ACC-202', amount: 15000, timestamp: '2026-08-11T14:00:00Z', txHash: '0xb20101' },
       { from: 'ACC-202', to: 'ACC-203', amount: 14700, timestamp: '2026-08-11T14:30:00Z', txHash: '0xb20202' },
-      { from: 'ACC-203', to: 'ACC-202', amount: 14200, timestamp: '2026-08-11T15:10:00Z', txHash: '0xb20303' }
+      { from: 'ACC-203', to: 'ACC-201', amount: 14200, timestamp: '2026-08-11T15:10:00Z', txHash: '0xb20303' }
     ];
 
     // --- MULE CHAIN ALPHA (Multi-hop path) ---
@@ -233,12 +233,12 @@ async function seed() {
     const nodeCount = countRes.records[0].get('nodeCount');
     const relCount = relRes.records[0].get('relCount');
 
-    console.log(`✅ Seed Completed Successfully!`);
-    console.log(`📊 Summary: Injected ${nodeCount} Nodes and ${relCount} Relationships into CognoDB Cloud.`);
-    console.log(`🔁 Fraud Rings Injected: 2 Layering Loops, 1 Synthetic Identity Network, 1 Mule Chain.`);
+    console.log('Seed completed successfully.');
+    console.log(`Nodes: ${nodeCount} | Relationships: ${relCount}`);
+    console.log('Fraud rings injected: 2 circular layering loops, 1 synthetic identity network, 1 mule chain.');
 
   } catch (error) {
-    console.error('❌ Seed Failed with Error:', error);
+    console.error('Seed failed:', error);
     process.exit(1);
   } finally {
     await session.close();
