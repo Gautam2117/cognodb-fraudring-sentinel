@@ -249,7 +249,7 @@ RETURN path, length(path) AS hopCount
 
 * **GitHub Repository**: Submitted via email to `hr@wexa.ai`
 * **Subject Line**: `CognoDB Assignment 2 – Gautam Govind`
-* **Live Demo URL**: *(Provided in email submission)*
+* **Live Demo URL**: **[https://cognodb-fraudring-sentinel.vercel.app](https://cognodb-fraudring-sentinel.vercel.app)**
 * **CognoDB Cloud Instance**: Running live on `databases.cognodb.cloud`.
 
 ---
